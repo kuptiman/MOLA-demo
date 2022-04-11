@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+// Model for responses to be added to database
 
 const answerSchema = mongoose.Schema({
    surveyname: String,

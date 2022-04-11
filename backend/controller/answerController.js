@@ -1,5 +1,4 @@
 const asyncHandler = require('express-async-handler')
-
 const Answer = require("../models/answerModel")
 
 // @desc    Get all responses from database
