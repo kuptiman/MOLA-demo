@@ -2,17 +2,26 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import './App.css';
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Form, ButtonGroup, Button } from 'react-bootstrap';
-
-// import QuestionsDataService from "./services/questions"
+import { CSVLink, CSVDownload } from "react-csv";
 
 function App() {
+  // States for API
   const [questions, setQuestions] = useState([]);
+  const [allReponses, setAllResponses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [downloadCSV, setDownloadCSV] = useState(false);
 
-  const [selectedOption1, setSelectedOption1] = useState("")
+  // States for user duration
+  const [isTiming, setIsTiming] = useState(false);
+  const [startTime, setStartTime] = useState();
 
-  // Retrieve question list from API
+  // State for radio question responses
+  const [selectedOptionJSONArr, setselectedOptionJSONArr] = useState([]);
+
+  // State for submission
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // Retrieve question list from API with GET request
   useEffect(() => {
     const retrieveQuestions = async () => {
       setIsLoading(true)
@@ -38,27 +47,91 @@ function App() {
   }, [])
 
   const handleRadio = (event) => {
-    console.log(event.target.name)
-    setSelectedOption1(event.target.value)
+    console.log("qNum is "+event.target.name)
+    console.log("qOptionSelected is "+event.target.value)
+
+    // Start timer on first option click
+    if (!isTiming) {
+      setStartTime(new Date())
+      setIsTiming(true)
+    }
+
+    let newJSONArr
+
+    const result = selectedOptionJSONArr.some(response => {
+      return response.questionnumber === event.target.name
+    })
+
+    if (!result) {
+      newJSONArr = selectedOptionJSONArr
+      newJSONArr.push({
+        questionnumber: event.target.name,
+        questionanswer: event.target.value
+      })
+    } else {
+      newJSONArr = selectedOptionJSONArr.map(response => {
+        if (response.questionnumber === event.target.name) {
+          return {...response, questionanswer: event.target.value}
+        } else {
+          return response
+        }
+      })
+    }
+    setselectedOptionJSONArr(newJSONArr)
+  }
+
+  // Callback on change of selectedOptionJSONArr for logging
+  useEffect(() => console.log(selectedOptionJSONArr), [selectedOptionJSONArr])
+
+  const submitResponse = async (submission) => {
+    try {
+      const reponse = await axios({
+        method: 'post',
+        url: 'http://localhost:5000/api/answers',
+        data: submission
+      })
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   const handleSubmit = (event) => {
     // event.preventDeafult();
-    
 
+    const endTime = new Date()
+    const durationInSeconds = (endTime - startTime)/1000
 
-    // const answer = {
-    // }
+    const submit = {
+      "surveyname": "mfq",
+      "answers": selectedOptionJSONArr,
+      "duration": durationInSeconds
+    }
 
-    // try {
-    //   const reponse = await axios.post('http://localhost:5000/api/answers', { answers })
-    //   console.log(reponse)
-    //   console.log(reponse.data)
-    // } catch (err) {
-    //   console.error(err);
-    // }
-    // console.log("Response submitted!")
+    submitResponse(submit);
+    setIsSubmitted(true);
   }
+
+  const retrieveResponses = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/answers')
+      setAllResponses(response.data)
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  const handleDownloadCSV = () => {
+    retrieveResponses()
+    setDownloadCSV(true)
+    
+  }
+
+  const csvData = [
+    ["firstname", "lastname", "email"],
+    ["Ahmed", "Tomi", "ah@smthing.co.com"],
+    ["Raed", "Labes", "rl@smthing.co.com"],
+    ["Yezzi", "Min l3b", "ymin@cocococo.com"]
+  ];
 
   return (
     <div className="App">
@@ -80,58 +153,7 @@ function App() {
                   </div>
                 </div>
                 <div className="row justify-content-center align-items-center">
-                  <div className="col-8">
-                    {/* <Form className="radio-Container" onChange={() => handleRadio()}>
-                      <Form.Check
-                        inline
-                        type="radio"
-                        name={question.varname}
-                        label={question.option1}
-                        id={question.varname + "_1"}
-                      />
-                      <Form.Check
-                        inline
-                        type="radio"
-                        name={question.varname}
-                        label={question.option2}
-                        id={question.varname + "_2"}
-                      />
-                      <Form.Check
-                        inline
-                        type="radio"
-                        name={question.varname}
-                        label={question.option3}
-                        id={question.varname + "_3"}
-                      />
-                      <Form.Check
-                        inline
-                        type="radio"
-                        name={question.varname}
-                        label={question.option4}
-                        id={question.varname + "_4"}
-                      />
-                      <Form.Check
-                        inline
-                        type="radio"
-                        name={question.varname}
-                        label={question.option5}
-                        id={question.varname + "_5"}
-                      />
-                      <Form.Check
-                        inline
-                        type="radio"
-                        name={question.varname}
-                        label={question.option6}
-                        id={question.varname + "_6"}
-                      />
-                      <Form.Check
-                        inline
-                        type="radio"
-                        name={question.varname}
-                        label={question.option7}
-                        id={question.varname + "_7"}
-                      />
-                    </Form> */}
+                  <div className="col-10">
                     <div 
                       className="btn-group btn-group-toggle" 
                       data-toggle="buttons"
@@ -140,32 +162,74 @@ function App() {
                       <label className="btn btn-secondary">
                         <input 
                           type="radio" 
-                          name={question.varname} 
-                          id={question.option1}
-                          value={question.option1}
+                          name={question.varname} // Question number
+                          id={(question.varname + "_" + question.option1).replace(/\s/g, "")} // ID currently unused
+                          value={question.option1} // Option label
                           onClick={handleRadio}
-                          checked={question.option1 === selectedOption1}
+                          // checked={() => isChecked(question.varname, question.option1)}
                         />
                          {question.option1}
-                      </label>
+                      </label> 
                       <label className="btn btn-secondary">
-                        <input type="radio" name={question.varname} id="option2" /> {question.option2}
-                      </label>
+                      <input 
+                          type="radio" 
+                          name={question.varname}
+                          id={(question.varname + "_" + question.option2).replace(/\s/g, "")}
+                          value={question.option2}
+                          onClick={handleRadio}
+                        />
+                         {question.option2}                      
+                        </label>
                       <label className="btn btn-secondary">
-                        <input type="radio" name={question.varname} id="option3" /> {question.option3}
-                      </label>
+                      <input 
+                          type="radio" 
+                          name={question.varname}
+                          id={(question.varname + "_" + question.option3).replace(/\s/g, "")}
+                          value={question.option3}
+                          onClick={handleRadio}
+                        />
+                         {question.option3}                          
+                        </label>
                       <label className="btn btn-secondary">
-                        <input type="radio" name={question.varname} id="option4" /> {question.option4}
-                      </label>
+                      <input 
+                          type="radio" 
+                          name={question.varname}
+                          id={(question.varname + "_" + question.option4).replace(/\s/g, "")}
+                          value={question.option4}
+                          onClick={handleRadio}
+                        />
+                         {question.option4}                          
+                        </label>
                       <label className="btn btn-secondary">
-                        <input type="radio" name={question.varname} id="option5" /> {question.option5}
-                      </label>
+                      <input 
+                          type="radio" 
+                          name={question.varname}
+                          id={(question.varname + "_" + question.option5).replace(/\s/g, "")}
+                          value={question.option5}
+                          onClick={handleRadio}
+                        />
+                         {question.option5}                          
+                        </label>
                       <label className="btn btn-secondary">
-                        <input type="radio" name={question.varname} id="option6" /> {question.option6}
-                      </label>
+                      <input 
+                          type="radio" 
+                          name={question.varname}
+                          id={(question.varname + "_" + question.option6).replace(/\s/g, "")}
+                          value={question.option6}
+                          onClick={handleRadio}
+                        />
+                         {question.option6}                          
+                        </label>
                       <label className="btn btn-secondary">
-                        <input type="radio" name={question.varname} id="option7" /> {question.option7}
-                      </label>
+                      <input 
+                          type="radio" 
+                          name={question.varname}
+                          id={(question.varname + "_" + question.option7).replace(/\s/g, "")}
+                          value={question.option7}
+                          onClick={handleRadio}
+                        />
+                         {question.option7}                          
+                        </label>
                     </div>
                   </div>
                 </div>
@@ -174,15 +238,36 @@ function App() {
           </div>
         )}
         <div className="jumbotron">
-          <p className="lead">This is a simple hero unit, a simple jumbotron-style component for calling extra attention to featured content or information.</p>
-          <button type="button" className="btn btn-primary btn-lg" onClick={() => handleSubmit()}> Submit </button>
-          <h1 className="display-4">Thank you!</h1>
+          {isSubmitted ? (
+            <div>
+              <p className="lead">Response submitted! Thank you!</p>
+              {/* <h1 className="display-4">Thank you!</h1> */}
+            </div>
+          ) : (
+            <button 
+              type="button" 
+              className="btn btn-primary btn-lg" 
+              onClick={() => handleSubmit()}
+            > 
+              Submit 
+            </button>
+          )}
 
           <hr className="my-4"/>
           
           <p className="lead">It uses utility classes for typography and spacing to space content out within the larger container.</p>
-          <button type="button" className="btn btn-warning btn-lg"> Download .csv </button>
-
+          <button
+            type="button" 
+            className="btn btn-warning btn-lg" 
+            onClick={() => handleDownloadCSV()}
+          > 
+            Download .csv 
+          </button>
+          {downloadCSV ? (
+            <CSVDownload data={csvData} target="_blank" />
+          ) : (
+            <div></div>
+          )}
         </div>
       </header>
     </div>
