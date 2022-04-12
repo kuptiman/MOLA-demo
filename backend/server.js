@@ -21,3 +21,6 @@ app.use('/api/answers', require('./routes/answerRoutes'))
 app.use(errorHandler)
 // Start backend server
 app.listen(port, () => console.log(`Server started on port ${port}`))
+
+
+// npm run server

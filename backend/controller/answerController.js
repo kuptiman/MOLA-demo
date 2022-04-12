@@ -17,19 +17,15 @@ const setAnswers = asyncHandler(async (req, res) => {
       res.status(400)
       throw new Error('No surveyname')
    }
-   if (!req.body.varname){
-      res.status(400)
-      throw new Error('No varname')
-   }
-   if (!req.body.answer){
+   if (!req.body.answers){
       res.status(400)
       throw new Error('No answer')
    }
 
    const answer = await Answer.create({
       surveyname: req.body.surveyname,
-      varname: req.body.varname,
-      answer: req.body.answer
+      answers: req.body.answers,
+      duration: req.body.duration
    })
    res.status(200).json(answer)
 })
