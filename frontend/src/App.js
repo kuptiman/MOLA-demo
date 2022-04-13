@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
+// axios for API handling, react-csv for CSV download handling
 import axios from "axios";
+import { CSVLink, CSVDownload } from "react-csv";
+// Styles
 import './App.css';
 import "bootstrap/dist/css/bootstrap.min.css";
-import { CSVLink, CSVDownload } from "react-csv";
 
 function App() {
   // States for API
@@ -29,6 +31,8 @@ function App() {
     retrieveResponses();
   }, [])
 
+
+  // GET requests for questions
   const retrieveQuestions = async () => {
     try {
       const response = await axios.get('http://localhost:5000/api/questions')
@@ -50,6 +54,7 @@ function App() {
     }
   }
 
+  // GET request for user responses
   const retrieveResponses = async () => {
     try {
       const response = await axios.get('http://localhost:5000/api/answers')
@@ -67,6 +72,7 @@ function App() {
     }
   }
 
+  // Handle radio option clicks
   const handleRadio = (event) => {
     console.log("qNum is "+event.target.name)
     console.log("qOptionSelected is "+event.target.value)
@@ -151,19 +157,12 @@ function App() {
     // setCSVData(aggregatedResponses)
   }
 
-  // const CSVData = [
-  //   ["firstname", "lastname", "email"],
-  //   ["Ahmed", "Tomi", "ah@smthing.co.com"],
-  //   ["Raed", "Labes", "rl@smthing.co.com"],
-  //   ["Yezzi", "Min l3b", "ymin@cocococo.com"]
-  // ];
-
   return (
     <div className="App">
       <header className="App-header">
         <div className="jumbotron">
-          <h1 className="display-4">Hello, world!</h1>
-          <p className="lead">This is a simple hero unit, a simple jumbotron-style component for calling extra attention to featured content or information.</p>
+          <h1 className="display-4">Morality and Language Lab</h1>
+          <p className="lead">Peter Kuptimanus, Full Stack Developer Application Demo</p>
           <hr className="my-4"/>
         </div>
         {isLoading ? (
@@ -173,7 +172,7 @@ function App() {
             {questions.map(question => (
               <div className="question-Container" key={question.varname}>
                 <div className="question row justify-content-center align-items-center">
-                  <div className="col-8">
+                  <div className="col-12">
                     <p>{question.questiontext}</p>
                   </div>
                 </div>
@@ -271,7 +270,7 @@ function App() {
           ) : (
             <button 
               type="button" 
-              className="btn btn-primary btn-lg" 
+              className="btn btn-primary btn-lg submit-Button" 
               onClick={() => handleSubmit()}
             > 
               Submit 
@@ -283,12 +282,11 @@ function App() {
             <div/>
           )}
           <hr className="my-4"/>
-          
-          <p className="lead">It uses utility classes for typography and spacing to space content out within the larger container.</p>
+          <p className="lead">Use the button below to download all responses from the database.</p>
           <CSVLink
             // type="button" 
             data={CSVData}
-            className="btn btn-warning btn-lg" 
+            className="btn btn-warning btn-lg submit-Button" 
             asyncOnClick={true}
             onClick={(event, done) => handleDownloadCSV()}
           > 
@@ -306,6 +304,8 @@ function App() {
           ) : (
             <div></div>
           )} */}
+          <p className="footer" style={{marginTop: "50px"}}>Powered by React, Bootstrap, NodeJS, and MongoDB.</p>
+          <p className="footer">Peter Kuptimanus</p>
         </div>
       </header>
     </div>
