@@ -10,6 +10,7 @@ function App() {
   const [allReponses, setAllResponses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [downloadCSV, setDownloadCSV] = useState(false);
+  const [CSVData, setCSVData] = useState([]);
 
   // States for user duration
   const [isTiming, setIsTiming] = useState(false);
@@ -20,31 +21,51 @@ function App() {
 
   // State for submission
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmissionError, setIsSubmissionError] = useState(false);
 
-  // Retrieve question list from API with GET request
+  // Retrieve question list and previous responses from API with GET request
   useEffect(() => {
-    const retrieveQuestions = async () => {
-      setIsLoading(true)
-      try {
-        const response = await axios.get('http://localhost:5000/api/questions')
-
-        // Set state for 10 random questions from database
-        let selected = []
-        while (selected.length < 10) {
-          const select = Math.floor(Math.random() * response.data.length)
-          if (!selected.some(item => item.varname === response.data[select].varname || selected.length === 0)) {
-            selected.push(response.data[select]);
-          }
-        }
-        setQuestions(selected)
-        
-        setIsLoading(false)
-      } catch (err) {
-        console.error(err);
-      }
-    }
     retrieveQuestions();
+    retrieveResponses();
   }, [])
+
+  const retrieveQuestions = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/questions')
+
+      // Set state for 10 random questions from database
+      let selected = []
+      while (selected.length < 10) {
+        const select = Math.floor(Math.random() * response.data.length)
+        if (!selected.some(item => item.varname === response.data[select].varname || selected.length === 0)) {
+          selected.push(response.data[select]);
+        }
+      }
+      setQuestions(selected)
+      
+      // Set page loading false
+      setIsLoading(false)
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  const retrieveResponses = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/answers')
+      // setAllResponses(response.data)
+      // Transform and normalize data to CSV
+      let aggregatedResponses = []
+      for (let res = 0; res < response.data.length ; res++) {
+        for (let ans = 0; ans < response.data[res].answers.length ; ans++) {
+          aggregatedResponses.push(response.data[res].answers[ans])
+        }
+      }
+      setCSVData(aggregatedResponses)
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   const handleRadio = (event) => {
     console.log("qNum is "+event.target.name)
@@ -106,32 +127,36 @@ function App() {
       "answers": selectedOptionJSONArr,
       "duration": durationInSeconds
     }
-
-    submitResponse(submit);
-    setIsSubmitted(true);
-  }
-
-  const retrieveResponses = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/api/answers')
-      setAllResponses(response.data)
-    } catch (err) {
-      console.error(err);
+    
+    // Check if user has answered any questions
+    if (isTiming) {
+      submitResponse(submit);
+      setIsSubmissionError(false);
+      setIsSubmitted(true);
+    } else {
+      setIsSubmissionError(true);
     }
   }
 
+  // Currently unused, will need for downloading realtime responses
   const handleDownloadCSV = () => {
-    retrieveResponses()
-    setDownloadCSV(true)
-    
+    // retrieveResponses()
+    // let aggregatedResponses = []
+
+    // for (let res = 0; res < allReponses.length ; res++) {
+    //   for (let ans = 0; ans < allReponses[res].answers.length ; ans++) {
+    //     aggregatedResponses.push(allReponses[res].answers[ans])
+    //   }
+    // }
+    // setCSVData(aggregatedResponses)
   }
 
-  const csvData = [
-    ["firstname", "lastname", "email"],
-    ["Ahmed", "Tomi", "ah@smthing.co.com"],
-    ["Raed", "Labes", "rl@smthing.co.com"],
-    ["Yezzi", "Min l3b", "ymin@cocococo.com"]
-  ];
+  // const CSVData = [
+  //   ["firstname", "lastname", "email"],
+  //   ["Ahmed", "Tomi", "ah@smthing.co.com"],
+  //   ["Raed", "Labes", "rl@smthing.co.com"],
+  //   ["Yezzi", "Min l3b", "ymin@cocococo.com"]
+  // ];
 
   return (
     <div className="App">
@@ -252,22 +277,35 @@ function App() {
               Submit 
             </button>
           )}
-
+          {isSubmissionError ? (
+            <p className="lead">Please answer at least one question before submitting!</p>
+              ) : (
+            <div/>
+          )}
           <hr className="my-4"/>
           
           <p className="lead">It uses utility classes for typography and spacing to space content out within the larger container.</p>
-          <button
+          <CSVLink
+            // type="button" 
+            data={CSVData}
+            className="btn btn-warning btn-lg" 
+            asyncOnClick={true}
+            onClick={(event, done) => handleDownloadCSV()}
+          > 
+            Download .csv 
+          </CSVLink>
+          {/* <button
             type="button" 
             className="btn btn-warning btn-lg" 
             onClick={() => handleDownloadCSV()}
           > 
             Download .csv 
-          </button>
-          {downloadCSV ? (
+          </button> */}
+          {/* {downloadCSV ? (
             <CSVDownload data={csvData} target="_blank" />
           ) : (
             <div></div>
-          )}
+          )} */}
         </div>
       </header>
     </div>
