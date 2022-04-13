@@ -264,7 +264,7 @@ function App() {
         <div className="jumbotron">
           {isSubmitted ? (
             <div>
-              <p className="lead">Response submitted! Thank you!</p>
+              <p className="lead">Response submitted. Thank you!</p>
               {/* <h1 className="display-4">Thank you!</h1> */}
             </div>
           ) : (
@@ -285,25 +285,14 @@ function App() {
           <p className="lead">Use the button below to download all responses from the database.</p>
           <CSVLink
             // type="button" 
-            data={CSVData}
             className="btn btn-warning btn-lg submit-Button" 
+            data={CSVData}
+            filename={"MOLA-demo-responses.csv"}
             asyncOnClick={true}
             onClick={(event, done) => handleDownloadCSV()}
           > 
             Download .csv 
           </CSVLink>
-          {/* <button
-            type="button" 
-            className="btn btn-warning btn-lg" 
-            onClick={() => handleDownloadCSV()}
-          > 
-            Download .csv 
-          </button> */}
-          {/* {downloadCSV ? (
-            <CSVDownload data={csvData} target="_blank" />
-          ) : (
-            <div></div>
-          )} */}
           <p className="footer" style={{marginTop: "50px"}}>Powered by React, Bootstrap, NodeJS, and MongoDB.</p>
           <p className="footer">Peter Kuptimanus</p>
         </div>
